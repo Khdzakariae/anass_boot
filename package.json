@@ -1,0 +1,46 @@
+{
+    "name": "ausbildung-scraper-prisma",
+    "version": "1.0.0",
+    "description": "Ausbildung.de scraper with motivation letter generator using Prisma and SQLite",
+    "type": "module",
+    "main": "app.js",
+    "scripts": {
+        "start": "node app.js",
+        "dev": "nodemon app.js",
+        "db:migrate": "prisma migrate dev",
+        "db:generate": "prisma generate",
+        "db:studio": "prisma studio",
+        "db:push": "prisma db push",
+        "db:reset": "prisma migrate reset",
+        "postinstall": "prisma generate"
+    },
+    "dependencies": {
+        "@google/generative-ai": "^0.17.1",
+        "@prisma/client": "^6.16.1",
+        "bcryptjs": "^3.0.2",
+        "cookie-parser": "^1.4.7",
+        "cors": "^2.8.5",
+        "dotenv": "^16.6.1",
+        "express": "^5.1.0",
+        "jsonwebtoken": "^9.0.2",
+        "multer": "^2.0.2",
+        "nodemailer": "^7.0.6",
+        "pdf2json": "^3.2.1",
+        "pdfkit": "^0.13.0",
+        "puppeteer": "^24.19.0"
+    },
+    "devDependencies": {
+        "nodemon": "^3.1.10",
+        "prisma": "^6.16.1"
+    },
+    "keywords": [
+        "scraper",
+        "ausbildung",
+        "motivation-letter",
+        "prisma",
+        "sqlite"
+    ],
+    "author": "Your Name",
+    "license": "MIT",
+    "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
+}

@@ -1,0 +1,117 @@
+{"timestamp":"2025-09-20T14:08:46.279Z","level":"ERROR","message":"Failed to fetch documents:","error":"dbManager.getUserDocuments is not a function","stack":"TypeError: dbManager.getUserDocuments is not a function\n    at file:///Users/zel-khad/Desktop/1337/last/backend/app.js:275:39"}
+{"timestamp":"2025-09-20T14:08:47.908Z","level":"ERROR","message":"Failed to fetch documents:","error":"dbManager.getUserDocuments is not a function","stack":"TypeError: dbManager.getUserDocuments is not a function\n    at file:///Users/zel-khad/Desktop/1337/last/backend/app.js:275:39"}
+{"timestamp":"2025-09-20T14:34:12.744Z","level":"SUCCESS","message":"Document saved to database: CV Professionnel Minimaliste Beige 2.pdf.pdf"}
+{"timestamp":"2025-09-20T14:35:08.814Z","level":"INFO","message":"📝 Starting motivation letter generation..."}
+{"timestamp":"2025-09-20T14:35:08.928Z","level":"SUCCESS","message":"CV parsed successfully. Character count: 1509"}
+{"timestamp":"2025-09-20T14:35:08.936Z","level":"INFO","message":"📊 Found 177 jobs that need letters."}
+{"timestamp":"2025-09-20T14:35:08.936Z","level":"INFO","message":"Generating motivation letters starting with 177 items."}
+{"timestamp":"2025-09-20T14:35:13.341Z","level":"SUCCESS","message":"✅ Letter created for Bundeswehr"}
+{"timestamp":"2025-09-20T14:35:37.916Z","level":"SUCCESS","message":"✅ Letter created for Residenz Am Wiesenkamp Immanuel Albertinen Diakonie"}
+{"timestamp":"2025-09-20T14:36:02.393Z","level":"SUCCESS","message":"✅ Letter created for Ev Amalie Sieveking Krankenhaus Ggmbh"}
+{"timestamp":"2025-09-20T14:36:26.718Z","level":"SUCCESS","message":"✅ Letter created for K S Gruppe"}
+{"timestamp":"2025-09-20T14:36:51.440Z","level":"SUCCESS","message":"✅ Letter created for Wichern Gemeinschaft Reinbek E V"}
+{"timestamp":"2025-09-20T14:37:15.400Z","level":"SUCCESS","message":"✅ Letter created for Regio Kliniken Gmbh"}
+{"timestamp":"2025-09-20T14:41:24.714Z","level":"INFO","message":"🕷️  Starting scraping process..."}
+{"timestamp":"2025-09-20T14:41:24.715Z","level":"INFO","message":"🚀 Initializing browser..."}
+{"timestamp":"2025-09-20T14:41:27.071Z","level":"SUCCESS","message":"Browser initialized successfully"}
+{"timestamp":"2025-09-20T14:41:27.072Z","level":"INFO","message":"\n📄 Processing page 1/3"}
+{"timestamp":"2025-09-20T14:41:30.201Z","level":"INFO","message":"Found 13 job listings on page 1"}
+{"timestamp":"2025-09-20T14:41:30.202Z","level":"INFO","message":"Processing: https://www.ausbildung.de/stellen/ausbildung-pflegefachmann-frau-m-w-d-bei-pflegeschule-vfa-e-v-verein-fuer-soziale-angelegenheiten-in-koeln-340921ef-8674-4e7e-8848-2d630759b63a/"}
+{"timestamp":"2025-09-20T14:41:31.672Z","level":"INFO","message":"Start date not found with selectors, trying full-text regex fallback..."}
+{"timestamp":"2025-09-20T14:41:31.674Z","level":"INFO","message":"Found start date with regex: 01.10.2025"}
+{"timestamp":"2025-09-20T14:41:31.719Z","level":"SUCCESS","message":"Scraped: [Titel: Ausbildung Pflegefachmann/-frau (m/w/d)] [Firma: Pflegeschule Vfa E V Verein Fuer Soziale Angelegenheiten] [Start: 01.10.2025] [Plätze: Stelle teilen Stelle teilen Per WhatsApp Per E-Mail Link kopieren Pflegeschule VfA e.V. – Verein für soziale Angelegenheiten {\"@context\":\"http://schema.org\",\"@type\":\"Corporation\",\"name\":\"Pflegeschule VfA e.V. – Verein für soziale Angelegenheiten\",\"legalNa...]"}
+{"timestamp":"2025-09-20T14:41:31.724Z","level":"SUCCESS","message":"💾 Saved new job: Ausbildung Pflegefachmann/-frau (m/w/d)"}
+{"timestamp":"2025-09-20T14:41:32.225Z","level":"INFO","message":"Processing: https://www.ausbildung.de/stellen/ausbildung-pflegefachmann-frau-m-w-d-bei-sbk-sozial-betriebe-koeln-gemeinnuetzige-gmbh-in-koeln-0796e377-2c45-43ea-a297-a2eadf343f4e/"}
+{"timestamp":"2025-09-20T14:41:33.666Z","level":"INFO","message":"Start date not found with selectors, trying full-text regex fallback..."}
+{"timestamp":"2025-09-20T14:41:33.667Z","level":"INFO","message":"Found start date with regex: 01.10.2025"}
+{"timestamp":"2025-09-20T14:41:33.710Z","level":"SUCCESS","message":"Scraped: [Titel: Ausbildung Pflegefachmann/-frau (m/w/d)] [Firma: Sbk Sozial Betriebe Koeln Gemeinnuetzige Gmbh] [Start: 01.10.2025] [Plätze: Stelle teilen Stelle teilen Per WhatsApp Per E-Mail Link kopieren SBK Sozial-Betriebe-Köln gemeinnützige GmbH (0) {\"@context\":\"http://schema.org\",\"@type\":\"Corporation\",\"name\":\"SBK Sozial-Betriebe-Köln gemeinnützige GmbH\",\"legalName\":\"SBK Sozial-Betriebe-K...]"}
+{"timestamp":"2025-09-20T14:41:33.713Z","level":"SUCCESS","message":"💾 Saved new job: Ausbildung Pflegefachmann/-frau (m/w/d)"}
+{"timestamp":"2025-09-20T14:41:34.214Z","level":"INFO","message":"Processing: https://www.ausbildung.de/stellen/verkuerzte-ausbildung-zur-zum-pflegefachfrau-pflegefachmann-w-m-d-einstieg-ins-2-ausbildungsjahr-zum-1-4-1-8-oder-1-10-bei-uniklinik-koeln-in-koeln-73064f98-fcd7-422f-b640-b1ba7178c2a3/"}
+{"timestamp":"2025-09-20T14:41:35.669Z","level":"INFO","message":"Start date not found with selectors, trying full-text regex fallback..."}
+{"timestamp":"2025-09-20T14:41:35.671Z","level":"INFO","message":"Found start date with regex: 01.11.2025"}
+{"timestamp":"2025-09-20T14:41:35.715Z","level":"WARN","message":"⏭️  Skipping job (no email found): Verkürzte Ausbildung zur / zum Pflegefachfrau / Pflegefachmann (w/m/d) (Einstieg ins 2. Ausbildungsjahr) zum 1.4., 1.8. oder 1.10."}
+{"timestamp":"2025-09-20T14:41:35.715Z","level":"SUCCESS","message":"Scraped: [Titel: Verkürzte Ausbildung zur / zum Pflegefachfrau / Pflegefachmann (w/m/d) (Einstieg ins 2. Ausbildungsjahr) zum 1.4., 1.8. oder 1.10.] [Firma: Uniklinik Koeln] [Start: 01.11.2025] [Plätze: Stelle teilen Stelle teilen Per WhatsApp Per E-Mail Link kopieren Uniklinik Köln (3) {\"@context\":\"http://schema.org\",\"@type\":\"Corporation\",\"name\":\"Uniklinik Köln\",\"legalName\":\"Uniklinik Köln\",\"description\":\"Bei uns zu arbeiten heißt für die Zukunft arbeit...]"}
+{"timestamp":"2025-09-20T14:41:36.217Z","level":"INFO","message":"Processing: https://www.ausbildung.de/stellen/ausbildung-pflegefachmann-frau-m-w-d-bei-deutschordens-altenzentren-konrad-adenauer-ggmbh-in-koeln-c4c1fcba-bf5c-4537-b4c4-22907590b562/"}
+{"timestamp":"2025-09-20T14:41:37.674Z","level":"INFO","message":"Start date not found with selectors, trying full-text regex fallback..."}
+{"timestamp":"2025-09-20T14:41:37.675Z","level":"INFO","message":"Found start date with regex: 01.10.2025"}
+{"timestamp":"2025-09-20T14:41:37.718Z","level":"SUCCESS","message":"Scraped: [Titel: Ausbildung Pflegefachmann/-frau (m/w/d)] [Firma: Deutschordens Altenzentren Konrad Adenauer Ggmbh] [Start: 01.10.2025] [Plätze: Stelle teilen Stelle teilen Per WhatsApp Per E-Mail Link kopieren Deutschordens-Altenzentren Konrad Adenauer gGmbH {\"@context\":\"http://schema.org\",\"@type\":\"Corporation\",\"name\":\"Deutschordens-Wohnstift Konrad Adenauer\",\"legalName\":\"Deutschordens-Wohnstift...]"}
+{"timestamp":"2025-09-20T14:41:37.721Z","level":"SUCCESS","message":"💾 Saved new job: Ausbildung Pflegefachmann/-frau (m/w/d)"}
+{"timestamp":"2025-09-20T14:41:38.223Z","level":"INFO","message":"Processing: https://www.ausbildung.de/stellen/ausbildung-pflegefachmann-frau-m-w-d-bei-caritasverband-fuer-den-rhein-erft-kreis-e-v-in-huerth-b502f116-b98a-44a5-8b9e-aeb324a1ea9b/"}
+{"timestamp":"2025-09-20T14:41:39.674Z","level":"INFO","message":"Start date not found with selectors, trying full-text regex fallback..."}
+{"timestamp":"2025-09-20T14:41:39.675Z","level":"INFO","message":"Found start date with regex: 01.11.2025"}
+{"timestamp":"2025-09-20T14:41:39.709Z","level":"SUCCESS","message":"Scraped: [Titel: Ausbildung Pflegefachmann/-frau (m/w/d)] [Firma: Caritasverband Fuer Den Rhein Erft Kreis E V] [Start: 01.11.2025] [Plätze: Stelle teilen Stelle teilen Per WhatsApp Per E-Mail Link kopieren Caritasverband für den Rhein-Erft-Kreis e.V. (0) {\"@context\":\"http://schema.org\",\"@type\":\"Corporation\",\"name\":\"Caritasverband für den Rhein-Erft-Kreis e.V.\",\"legalName\":\"Caritasverband für...]"}
+{"timestamp":"2025-09-20T14:41:39.711Z","level":"SUCCESS","message":"💾 Saved new job: Ausbildung Pflegefachmann/-frau (m/w/d)"}
+{"timestamp":"2025-09-20T14:41:40.212Z","level":"INFO","message":"Processing: https://www.ausbildung.de/stellen/ausbildung-zum-pflegefachmann-zur-pflegefachfrau-pflegefachkraft-in-der-haeuslichen-pflege-m-w-a-in-koeln-bei-cura-seniorenwohn-und-pflegeheime-dienstleistungs-gmbh-in-koeln-e47f1bb1-d43b-440e-afce-7bc51e469c48/"}
+{"timestamp":"2025-09-20T14:41:41.678Z","level":"INFO","message":"Start date not found with selectors, trying full-text regex fallback..."}
+{"timestamp":"2025-09-20T14:41:41.679Z","level":"INFO","message":"Found start date with regex: 01.11.2025"}
+{"timestamp":"2025-09-20T14:41:41.723Z","level":"SUCCESS","message":"Scraped: [Titel: Ausbildung zum Pflegefachmann/zur Pflegefachfrau/Pflegefachkraft in der Häuslichen Pflege (m/w/a) in Köln] [Firma: Cura Seniorenwohn Und Pflegeheime Dienstleistungs Gmbh] [Start: 01.11.2025] [Plätze: Stelle teilen Stelle teilen Per WhatsApp Per E-Mail Link kopieren CURA Seniorenwohn- und Pflegeheime Dienstleistungs GmbH {\"@context\":\"http://schema.org\",\"@type\":\"Corporation\",\"name\":\"CURA Seniorenwohn- und Pflegeheime Dienstleistungs GmbH\",\"legalName\":\"C...]"}
+{"timestamp":"2025-09-20T14:41:41.726Z","level":"SUCCESS","message":"💾 Saved new job: Ausbildung zum Pflegefachmann/zur Pflegefachfrau/Pflegefachkraft in der Häuslichen Pflege (m/w/a) in Köln"}
+{"timestamp":"2025-09-20T14:41:42.227Z","level":"INFO","message":"Processing: https://www.ausbildung.de/stellen/ausbildung-pflegefachmann-frau-m-w-d-bei-awo-bezirksverband-mittelrhein-e-v-in-koeln-b483a1c1-d212-4f1a-ae95-1c0a8e4a32bd/"}
+{"timestamp":"2025-09-20T14:41:43.681Z","level":"INFO","message":"Start date not found with selectors, trying full-text regex fallback..."}
+{"timestamp":"2025-09-20T14:41:43.682Z","level":"INFO","message":"Found start date with regex: 01.11.2025"}
+{"timestamp":"2025-09-20T14:41:43.727Z","level":"SUCCESS","message":"Scraped: [Titel: Ausbildung Pflegefachmann/-frau (m/w/d)] [Firma: Awo Bezirksverband Mittelrhein E V] [Start: 01.11.2025] [Plätze: Stelle teilen Stelle teilen Per WhatsApp Per E-Mail Link kopieren AWO Bezirksverband Mittelrhein e. V. {\"@context\":\"http://schema.org\",\"@type\":\"Corporation\",\"name\":\"AWO GESA GmbH\",\"legalName\":\"AWO GESA GmbH\",\"description\":\"AWO Bezirksverband Mittelrhein e...]"}
+{"timestamp":"2025-09-20T14:41:43.730Z","level":"SUCCESS","message":"💾 Saved new job: Ausbildung Pflegefachmann/-frau (m/w/d)"}
+{"timestamp":"2025-09-20T14:41:44.231Z","level":"INFO","message":"Processing: https://www.ausbildung.de/stellen/ausbildung-zur-pflegefachfrau-zum-pflegefachmann-bei-kolping-bildung-deutschland-ggmbh-in-troisdorf-1021724c-eb57-45ef-80e1-e16a1eb9a541/"}
+{"timestamp":"2025-09-20T14:41:45.759Z","level":"INFO","message":"Start date not found with selectors, trying full-text regex fallback..."}
+{"timestamp":"2025-09-20T14:41:45.760Z","level":"INFO","message":"Found start date with regex: 01.10.2025"}
+{"timestamp":"2025-09-20T14:41:45.797Z","level":"SUCCESS","message":"Scraped: [Titel: Ausbildung zur Pflegefachfrau/zum Pflegefachmann] [Firma: Kolping Bildung Deutschland Ggmbh] [Start: 01.10.2025] [Plätze: Stelle teilen Stelle teilen Per WhatsApp Per E-Mail Link kopieren Kolping Bildung Deutschland gGmbH {\"@context\":\"http://schema.org\",\"@type\":\"Corporation\",\"name\":\"Kolping Bildung Deutschland gGmbH\",\"legalName\":\"Kolping Bildung Deutschland gGmbH\",\"descripti...]"}
+{"timestamp":"2025-09-20T14:41:45.798Z","level":"SUCCESS","message":"💾 Saved new job: Ausbildung zur Pflegefachfrau/zum Pflegefachmann"}
+{"timestamp":"2025-09-20T14:41:46.300Z","level":"INFO","message":"Processing: https://www.ausbildung.de/stellen/ausbildung-pflegefachfrau-pflegefachmann-bei-apm-in-koeln-2192f896-a44d-4694-8c33-9813c14d2053/"}
+{"timestamp":"2025-09-20T14:41:47.886Z","level":"INFO","message":"Start date not found with selectors, trying full-text regex fallback..."}
+{"timestamp":"2025-09-20T14:41:47.887Z","level":"INFO","message":"Found start date with regex: 01.04.2026"}
+{"timestamp":"2025-09-20T14:41:47.931Z","level":"SUCCESS","message":"Scraped: [Titel: Ausbildung Pflegefachfrau/Pflegefachmann] [Firma: Apm] [Start: 01.04.2026] [Plätze: Stelle teilen Stelle teilen Per WhatsApp Per E-Mail Link kopieren apm {\"@context\":\"http://schema.org\",\"@type\":\"Corporation\",\"name\":\"apm\",\"legalName\":\"apm\",\"description\":\"apm – Wir bilden Pflegekräfte Seit 2011 bietet apm ein maßgeschneidertes Angebot zur...]"}
+{"timestamp":"2025-09-20T14:41:47.933Z","level":"SUCCESS","message":"💾 Saved new job: Ausbildung Pflegefachfrau/Pflegefachmann"}
+{"timestamp":"2025-09-20T14:41:48.434Z","level":"INFO","message":"Processing: https://www.ausbildung.de/stellen/ausbildung-pflegefachmann-frau-m-w-d-bei-lvr-klinik-langenfeld-in-langenfeld-rheinland-ac1ea0fe-2c3a-419b-889e-eb3199647ecb/"}
+{"timestamp":"2025-09-20T14:41:49.892Z","level":"INFO","message":"Start date not found with selectors, trying full-text regex fallback..."}
+{"timestamp":"2025-09-20T14:41:49.893Z","level":"INFO","message":"Found start date with regex: 01.04.2026"}
+{"timestamp":"2025-09-20T14:41:49.937Z","level":"SUCCESS","message":"Scraped: [Titel: Ausbildung Pflegefachmann/-frau (m/w/d) ab April 2026] [Firma: Lvr Klinik Langenfeld] [Start: 01.04.2026] [Plätze: Stelle teilen Stelle teilen Per WhatsApp Per E-Mail Link kopieren LVR-Klinik Langenfeld (0) {\"@context\":\"http://schema.org\",\"@type\":\"Corporation\",\"name\":\"LVR-Klinik Langenfeld\",\"legalName\":\"LVR-Klinik Langenfeld\",\"description\":\"Die LVR-Klinik Langenfeld i...]"}
+{"timestamp":"2025-09-20T14:41:49.939Z","level":"SUCCESS","message":"💾 Saved new job: Ausbildung Pflegefachmann/-frau (m/w/d) ab April 2026"}
+{"timestamp":"2025-09-20T14:41:50.441Z","level":"INFO","message":"Processing: https://www.ausbildung.de/stellen/ausbildung-pflegefachmann-frau-m-w-d-bei-wbs-training-schulen-ggmbh-in-troisdorf-019ee234-96d4-4e79-975e-44927d609b09/"}
+{"timestamp":"2025-09-20T14:41:51.904Z","level":"INFO","message":"Start date not found with selectors, trying full-text regex fallback..."}
+{"timestamp":"2025-09-20T14:41:51.905Z","level":"INFO","message":"Found start date with regex: 01.04.2026"}
+{"timestamp":"2025-09-20T14:41:51.946Z","level":"SUCCESS","message":"Scraped: [Titel: Ausbildung Pflegefachmann/-frau (m/w/d)] [Firma: Wbs Training Schulen Ggmbh] [Start: 01.04.2026] [Plätze: Stelle teilen Stelle teilen Per WhatsApp Per E-Mail Link kopieren WBS TRAINING SCHULEN gGmbH {\"@context\":\"http://schema.org\",\"@type\":\"Corporation\",\"name\":\"WBS TRAINING SCHULEN gGmbH\",\"legalName\":\"WBS TRAINING SCHULEN gGmbH\",\"description\":\"WER WIR SIND. WB...]"}
+{"timestamp":"2025-09-20T14:41:51.948Z","level":"SUCCESS","message":"💾 Saved new job: Ausbildung Pflegefachmann/-frau (m/w/d)"}
+{"timestamp":"2025-09-20T14:41:52.449Z","level":"INFO","message":"Processing: https://www.ausbildung.de/stellen/ausbildung-zum-pflegefachmann-frau-m-w-d-mit-vertiefung-altenpfleger-im-pflegeheim-bei-kursana-gmbh-in-kuerten-cb52b5f2-b7dc-41e2-bb01-475a7f06bf1b/"}
+{"timestamp":"2025-09-20T14:41:53.895Z","level":"INFO","message":"Start date not found with selectors, trying full-text regex fallback..."}
+{"timestamp":"2025-09-20T14:41:53.896Z","level":"INFO","message":"Found start date with regex: 01.04.2026"}
+{"timestamp":"2025-09-20T14:41:53.931Z","level":"SUCCESS","message":"Scraped: [Titel: Ausbildung zum Pflegefachmann/-frau (m/w/d) mit Vertiefung Altenpfleger im Pflegeheim] [Firma: Kursana Gmbh] [Start: 01.04.2026] [Plätze: Stelle teilen Stelle teilen Per WhatsApp Per E-Mail Link kopieren Kursana GmbH (0) {\"@context\":\"http://schema.org\",\"@type\":\"Corporation\",\"name\":\"Kursana Domizil Kürten\",\"legalName\":\"Kursana Domizil Kürten\",\"description\":\"Kursana ist einer der bundesweit f...]"}
+{"timestamp":"2025-09-20T14:41:53.931Z","level":"WARN","message":"⏭️  Skipping job (no email found): Ausbildung zum Pflegefachmann/-frau (m/w/d) mit Vertiefung Altenpfleger im Pflegeheim"}
+{"timestamp":"2025-09-20T14:41:54.433Z","level":"INFO","message":"Processing: https://www.ausbildung.de/stellen/ausbildung-pflegefachmann-frau-m-w-d-bei-seniorenresidenzen-haus-schlosspark-in-duesseldorf-c6439a3f-6700-48cf-a08d-55e457205435/"}
+{"timestamp":"2025-09-20T14:41:55.895Z","level":"INFO","message":"Start date not found with selectors, trying full-text regex fallback..."}
+{"timestamp":"2025-09-20T14:41:55.897Z","level":"INFO","message":"Found start date with regex: 01.03.2026"}
+{"timestamp":"2025-09-20T14:41:55.937Z","level":"SUCCESS","message":"Scraped: [Titel: Ausbildung Pflegefachmann/-frau (m/w/d)] [Firma: Seniorenresidenzen Haus Schlosspark] [Start: 01.03.2026] [Plätze: Stelle teilen Stelle teilen Per WhatsApp Per E-Mail Link kopieren Seniorenresidenzen Haus Schlosspark GmbH und Seniorenresidenz Paulushaus GmbH {\"@context\":\"http://schema.org\",\"@type\":\"Corporation\",\"name\":\"Seniorenresidenzen Haus Schlosspark GmbH und Seni...]"}
+{"timestamp":"2025-09-20T14:41:55.938Z","level":"SUCCESS","message":"💾 Saved new job: Ausbildung Pflegefachmann/-frau (m/w/d)"}
+{"timestamp":"2025-09-20T14:41:56.440Z","level":"INFO","message":"📈 Page 1 results: 11 jobs saved with emails"}
+{"timestamp":"2025-09-20T14:41:56.440Z","level":"INFO","message":"📊 Scraping pages: 1/3 (33%) — 29s"}
+{"timestamp":"2025-09-20T14:41:57.441Z","level":"INFO","message":"\n📄 Processing page 2/3"}
+{"timestamp":"2025-09-20T14:41:59.093Z","level":"INFO","message":"📊 Scraping pages: 2/3 (67%) — 32s"}
+{"timestamp":"2025-09-20T14:41:59.093Z","level":"INFO","message":"📈 Page 2 results: 0 jobs saved with emails"}
+{"timestamp":"2025-09-20T14:41:59.093Z","level":"INFO","message":"Found 13 job listings on page 2"}
+{"timestamp":"2025-09-20T14:42:00.096Z","level":"INFO","message":"\n📄 Processing page 3/3"}
+{"timestamp":"2025-09-20T14:42:02.063Z","level":"INFO","message":"Found 13 job listings on page 3"}
+{"timestamp":"2025-09-20T14:42:02.063Z","level":"INFO","message":"📊 Scraping pages: 3/3 (100%) — 35s"}
+{"timestamp":"2025-09-20T14:42:02.063Z","level":"INFO","message":"📈 Page 3 results: 0 jobs saved with emails"}
+{"timestamp":"2025-09-20T14:42:02.064Z","level":"SUCCESS","message":"✅ Scraping completed successfully!"}
+{"timestamp":"2025-09-20T14:42:02.064Z","level":"SUCCESS","message":"✅ Scraping pages completed: 3/3 in 35s"}
+{"timestamp":"2025-09-20T14:42:02.064Z","level":"INFO","message":"📊 Final Results:\n   • Total jobs saved with email: 11\n   • Total URLs processed: 13\n   • Total errors encountered: 0"}
+{"timestamp":"2025-09-20T14:42:02.170Z","level":"INFO","message":"Browser closed successfully"}
+{"timestamp":"2025-09-20T14:42:02.170Z","level":"INFO","message":"Database connection closed successfully"}
+{"timestamp":"2025-09-20T14:42:02.170Z","level":"ERROR","message":"API Scraping Error: {\n  \"type\": \"object\",\n  \"isErrorInstance\": true,\n  \"error\": \"Cannot read properties of undefined (reading 'length')\",\n  \"stack\": \"TypeError: Cannot read properties of undefined (reading 'length')\\n    at scrapeAusbildung (file:///Users/zel-khad/Desktop/1337/last/backend/services/aussbildung.js:663:18)\",\n  \"fullError\": \"{\\\"stack\\\":\\\"TypeError: Cannot read properties of undefined (reading 'length')\\\\n    at scrapeAusbildung (file:///Users/zel-khad/Desktop/1337/last/backend/services/aussbildung.js:663:18)\\\",\\\"message\\\":\\\"Cannot read properties of undefined (reading 'length')\\\"}\"\n}"}
+{"timestamp":"2025-09-20T14:42:19.279Z","level":"INFO","message":"📝 Starting motivation letter generation..."}
+{"timestamp":"2025-09-20T14:42:19.374Z","level":"SUCCESS","message":"CV parsed successfully. Character count: 1509"}
+{"timestamp":"2025-09-20T14:42:19.380Z","level":"INFO","message":"📊 Found 11 jobs that need letters."}
+{"timestamp":"2025-09-20T14:42:19.380Z","level":"INFO","message":"Generating motivation letters starting with 11 items."}
+{"timestamp":"2025-09-20T14:42:24.303Z","level":"SUCCESS","message":"✅ Letter created for Seniorenresidenzen Haus Schlosspark"}
+{"timestamp":"2025-09-20T14:42:48.829Z","level":"SUCCESS","message":"✅ Letter created for Wbs Training Schulen Ggmbh"}
+{"timestamp":"2025-09-20T14:43:13.711Z","level":"SUCCESS","message":"✅ Letter created for Lvr Klinik Langenfeld"}
+{"timestamp":"2025-09-20T14:43:38.491Z","level":"SUCCESS","message":"✅ Letter created for Apm"}
+{"timestamp":"2025-09-20T14:44:03.050Z","level":"SUCCESS","message":"✅ Letter created for Kolping Bildung Deutschland Ggmbh"}
+{"timestamp":"2025-09-20T14:44:27.743Z","level":"SUCCESS","message":"✅ Letter created for Awo Bezirksverband Mittelrhein E V"}
+{"timestamp":"2025-09-20T14:44:51.797Z","level":"SUCCESS","message":"✅ Letter created for Cura Seniorenwohn Und Pflegeheime Dienstleistungs Gmbh"}
+{"timestamp":"2025-09-20T14:45:16.281Z","level":"SUCCESS","message":"✅ Letter created for Caritasverband Fuer Den Rhein Erft Kreis E V"}
+{"timestamp":"2025-09-20T14:45:40.452Z","level":"SUCCESS","message":"✅ Letter created for Deutschordens Altenzentren Konrad Adenauer Ggmbh"}
+{"timestamp":"2025-09-20T14:46:04.721Z","level":"SUCCESS","message":"✅ Letter created for Sbk Sozial Betriebe Koeln Gemeinnuetzige Gmbh"}
+{"timestamp":"2025-09-20T14:46:28.988Z","level":"SUCCESS","message":"✅ Letter created for Pflegeschule Vfa E V Verein Fuer Soziale Angelegenheiten"}
+{"timestamp":"2025-09-20T14:46:48.995Z","level":"SUCCESS","message":"Generating motivation letters completed successfully."}
+{"timestamp":"2025-09-20T14:46:49.000Z","level":"INFO","message":"Letter generation process finished."}
+{"timestamp":"2025-09-20T14:47:17.666Z","level":"SUCCESS","message":"Document saved to database: CV Professionnel Minimaliste Beige 2.pdf.pdf"}
