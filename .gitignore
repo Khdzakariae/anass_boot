@@ -1,3 +1,26 @@
 # Ignore all node_modules directories
 node_modules/
 **/node_modules/
+
+# Environment files
+.env
+**/.env
+
+# Build outputs
+front/dist/
+backend/public/
+
+# Generated uploads and logs
+backend/uploads/
+!backend/uploads/.gitkeep
+backend/cv_uploads/
+!backend/cv_uploads/.gitkeep
+backend/bewerbungsschreiben/
+!backend/bewerbungsschreiben/.gitkeep
+backend/logs/
+!backend/logs/.gitkeep
+
+# Misc
+*.log
+uploads/
+!uploads/.gitkeep

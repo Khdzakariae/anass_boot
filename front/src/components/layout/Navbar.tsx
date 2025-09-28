@@ -9,7 +9,8 @@ import {
   Settings,
   LogOut,
   Menu,
-  X
+  X,
+  FileText
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -28,7 +29,9 @@ export const Navbar = () => {
     { name: 'Dashboard', href: '/dashboard', icon: BarChart3 },
     { name: 'Scrape Jobs', href: '/scrape', icon: FileSearch },
     { name: 'Generate Letters', href: '/generate', icon: Bot },
+    { name: 'Documents', href: '/documents', icon: FileText },
     { name: 'Send Emails', href: '/send-emails', icon: Mail },
+    { name: 'Settings', href: '/settings', icon: Settings },
   ];
 
   const isActive = (path: string) => location.pathname === path;

@@ -15,7 +15,8 @@ import {
     getCampaigns,
     updateCampaignStatus,
     getDocuments,
-    deleteAusbildung 
+    deleteAusbildung,
+    deleteAllAusbildung2025
 
 } from '../services/aussbildung.js';
 
@@ -30,6 +31,8 @@ router.post('/scrape', scrapeAusbildung); // Include userId in body
 // router.post('/send-email', sendEmail);
 router.get('/stats/:userId', getStats);
 router.delete('/ausbildung/:id', deleteAusbildung); // Include userId in body
+// Delete all Ausbildung records for 2025
+router.delete('/delete-2025', deleteAllAusbildung2025);
 router.get("/stats", getStats);
 router.post('/campaigns', createCampaign);
 router.get('/campaigns', getCampaigns);

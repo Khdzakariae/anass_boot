@@ -1,0 +1,15 @@
+{
+  "name": "anass_boot",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "install": "npm install --prefix backend && npm install --prefix front",
+    "build": "npm run build --prefix front",
+    "start": "node backend/app.js",
+    "start:prod": "npm run build --prefix front && node backend/app.js",
+    "dev": "concurrently \"npm run dev --prefix backend\" \"npm run dev --prefix front\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

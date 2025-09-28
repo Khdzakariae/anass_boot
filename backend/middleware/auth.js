@@ -1,53 +1,52 @@
-import { logger } from '../utils.js';
-import jwt from 'jsonwebtoken';
-import config from '../config.js';
-import { PrismaClient } from '@prisma/client';
+import jwt from "jsonwebtoken";
+import { logger } from "../utils.js";
 
-const prisma = new PrismaClient();
-
-const authenticate = async (req, res, next) => {
-  let token;
-
-  // Get token from Authorization header or cookie
-  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-    token = req.headers.authorization.split(' ')[1];
-  } else if (req.cookies?.token) {
-    token = req.cookies.token;
-  }
-
-  if (!token) {
-    return res.status(401).json({ error: 'Not authorized, no token.' });
-  }
-
+export function getUserIdFromToken(req) {
   try {
-    // Verify token
-    const decoded = jwt.verify(token, config.jwt.secret); // assuming you have config.jwt.secret
+    let token = null;
 
-    if (!decoded?.userId) {
-      return res.status(401).json({ error: 'Not authorized, token invalid.' });
+    if (req.headers.authorization) {
+      const authHeader = req.headers.authorization;
+      if (authHeader.startsWith("Bearer ")) {
+        token = authHeader.substring(7);
+      }
     }
 
-    // Check if user exists in DB
-    const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
-
-    if (!user) {
-      return res.status(401).json({ error: 'Not authorized, user not found.' });
+    if (!token && req.cookies && req.cookies.auth) {
+      token = req.cookies.auth;
     }
 
-    // Attach user info to request
-    req.user = {
-      id: user.id,
-      email: user.email,
-      role: user.role, // optional, if you have roles
-    };
+    if (!token) {
+      return null;
+    }
 
-    next();
+    const JWT_SECRET = process.env.JWT_SECRET || "your-jwt-secret-key";
+    const decoded = jwt.verify(token, JWT_SECRET);
+
+    if (decoded && decoded.id) {
+      return String(decoded.id);
+    }
+
+    return null;
   } catch (error) {
-    logger.error('Auth middleware error:', { message: error.message, stack: error.stack });
-    res.status(401).json({ error: 'Not authorized, token failed.' });
+    logger.error("Token verification failed", { error: error.message });
+    return null;
   }
-};
+}
 
-export default authenticate;
+export function authenticateToken(req, res, next) {
+  const userId = getUserIdFromToken(req);
+
+  if (!userId) {
+    return res.status(401).json({
+      error: "Unauthorized: Invalid or missing token",
+    });
+  }
+
+  req.userId = userId;
+  next();
+}
+
+export default authenticateToken;
 
 

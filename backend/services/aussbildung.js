@@ -239,19 +239,56 @@ class SimpleProgressTracker {
 }
 
 class AusbildungScraperAdvanced {
-    constructor(searchTerm, location = '', userId) {
-
-
-      console.log('Initializing AusbildungScraperAdvanced with:', { searchTerm, location, userId });
+    constructor(searchTerm, location = '', userId, website = 'ausbildung') {
+      console.log('Initializing AusbildungScraperAdvanced with:', { searchTerm, location, userId, website });
       this.searchTerm = encodeURIComponent(searchTerm);
       this.location = encodeURIComponent(location);
-      this.baseUrl = config.scraping.baseUrl;
+      this.website = website;
+      this.userId = userId;
+      this.dbManager = new DatabaseManager();
+      
+      // Website-specific configurations
+      this.websiteConfigs = {
+        ausbildung: {
+          baseUrl: 'https://www.ausbildung.de/suche',
+          searchParams: (term, loc, page) => `?search=${term}%7C${loc}&radius=500&page=${page}`,
+          jobLinkSelector: "a[href^='/stellen/']",
+          selectors: {
+            title: 'h1',
+            company: 'h4[data-testid="jp-customer"], .company-name, [itemprop="hiringOrganization"]',
+            location: '[data-testid="jp-branches"], .company-address, .job-location',
+            startDate: '[data-testid="jp-starting-at"], .jp-starting-at, .start-date',
+            vacancies: '[data-testid="jp-vacancies"], .vacancies, .job-vacancies'
+          }
+        },
+        azubi: {
+          baseUrl: 'https://www.azubi.de/ausbildungsplatz',
+          searchParams: (term, loc, page) => `?text=${encodeURIComponent(term)}&ort=${encodeURIComponent(loc)}`, // Simple search format
+          jobLinkSelector: 'a[href*="/ausbildungsplatz/"][href*="-p-"]', // Updated to match actual pattern
+          selectors: {
+            title: 'h1, [data-testid="job-title"], .job-title, .ausbildung-title',
+            company: '[data-cy="company-name"], .company-name, [data-testid="company-name"], .employer-name, h2, .firma, strong',
+            location: '[data-cy="address"], .job-location, [data-cy="location"], .address, .ort, .standort',
+            startDate: 'dt:contains("Beginn") + dd, .start-date, [data-cy="start-date"], .ausbildungsbeginn, .beginn',
+            vacancies: '.vacancies, [data-cy="vacancies"], .available-positions, .freie-plaetze',
+            requirements: '.requirements, [data-cy="requirements"], .voraussetzungen, .anforderungen',
+            salary: '.salary, [data-cy="salary"], .gehalt, .vergütung, .ausbildungsvergütung',
+            benefits: '.benefits, .leistungen, .vorteile',
+            duration: '.duration, .dauer, .ausbildungsdauer'
+          }
+        }
+      };
+      
+      this.config = this.websiteConfigs[website];
+      if (!this.config) {
+        throw new Error(`Unsupported website: ${website}. Use 'ausbildung' or 'azubi'.`);
+      }
+      
       this.browser = null;
       this.page = null;
       this.processedUrls = new Set();
       this.errors = [];
-      this.userId = userId;
-      this.dbManager = new DatabaseManager();
+      
       // fire-and-forget is fine (dirs not critical for scraping)
       this.initializeDirectories();
     }
@@ -334,65 +371,81 @@ class AusbildungScraperAdvanced {
         try {
           await this.page.goto(url, { waitUntil: 'networkidle2', timeout: config.scraping.requestTimeout });
   
-          const title = await this.page.$eval('h1', el => el.textContent?.trim()).catch(() => 'N/A');
+          const title = await this.page.$eval(this.config.selectors.title, el => el.textContent?.trim()).catch(() => 'N/A');
   
-  
+          // Extract company/institution with website-specific logic
           let institution = 'N/A';
-          const instSelectors = [
-            'h4[data-testid="jp-customer"]',
-            '.company-name',
-            '[itemprop="hiringOrganization"]'
-          ];
-          for (const selector of instSelectors) {
+          if (this.website === 'ausbildung') {
+            const instSelectors = this.config.selectors.company.split(', ');
+            for (const selector of instSelectors) {
+              try {
+                institution = await this.page.$eval(selector.trim(), el => {
+                  const text = el.textContent?.trim() || '';
+                  return text.toLowerCase().startsWith('bei ') ? text.substring(4) : text;
+                });
+                if (institution && institution !== 'N/A') break;
+              } catch (_) {}
+            }
+            if (institution === 'N/A' || institution.length < 2) {
+              const urlMatch = url.match(/bei-(.*?)-in-/);
+              if (urlMatch) {
+                institution = urlMatch[1]
+                  .replace(/-/g, ' ')
+                  .replace(/\b\w/g, l => l.toUpperCase());
+              }
+            }
+          } else if (this.website === 'azubi') {
             try {
-              institution = await this.page.$eval(selector, el => {
-                const text = el.textContent?.trim() || '';
-                return text.toLowerCase().startsWith('bei ') ? text.substring(4) : text;
-              });
-              if (institution && institution !== 'N/A') break;
+              institution = await this.page.$eval(this.config.selectors.company, el => el.textContent?.trim());
             } catch (_) {}
           }
-          if (institution === 'N/A' || institution.length < 2) {
-            const urlMatch = url.match(/bei-(.*?)-in-/);
-            if (urlMatch) {
-              institution = urlMatch[1]
-                .replace(/-/g, ' ')
-                .replace(/\b\w/g, l => l.toUpperCase());
-            }
-          }
   
+          // Extract location
           const location = await this.extractFieldWithSelectors(
-            ['[data-testid="jp-branches"]', '.company-address', '.job-location', '[class*="location"]', '[class*="address"]', '[class*="standort"]'],
+            this.config.selectors.location.split(', '),
             ['Standort', 'Standorte', 'Ort', 'Adresse'],
             'location'
           );
   
-          let startDate = await this.extractFieldWithSelectors(
-            ['[data-testid="jp-starting-at"]', '.jp-starting-at', '.start-date', '[class*="start"]', '[class*="begin"]'],
-            ['Beginn', 'Ausbildungsbeginn', 'Start', 'Startdatum'],
-            'startDate'
-          );
+          // Extract start date with website-specific logic
+          let startDate = 'N/A';
+          if (this.website === 'ausbildung') {
+            startDate = await this.extractFieldWithSelectors(
+              this.config.selectors.startDate.split(', '),
+              ['Beginn', 'Ausbildungsbeginn', 'Start', 'Startdatum'],
+              'startDate'
+            );
   
-          if (startDate === 'N/A') {
-            logger.info('Start date not found with selectors, trying full-text regex fallback...');
-            const plainText = await this.page.evaluate(() => document.body.innerText);
-            const datePatterns = [
-              /(?:beginn|start|ab)\s*:?\s*(\d{1,2}\.\d{1,2}\.(?:\d{4}|\d{2}))/i,
-              /(?:ausbildungsbeginn)\s*:?\s*(\d{1,2}\.\d{1,2}\.(?:\d{4}|\d{2}))/i,
-              /\b(\d{1,2}\.\d{1,2}\.(?:2024|2025|2026|2027))\b/
-            ];
-            for (const pattern of datePatterns) {
-              const match = plainText.match(pattern);
-              if (match && match[1]) {
-                startDate = match[1];
-                logger.info(`Found start date with regex: ${startDate}`);
-                break;
+            if (startDate === 'N/A') {
+              logger.info('Start date not found with selectors, trying full-text regex fallback...');
+              const plainText = await this.page.evaluate(() => document.body.innerText);
+              const datePatterns = [
+                /(?:beginn|start|ab)\s*:?\s*(\d{1,2}\.\d{1,2}\.(?:\d{4}|\d{2}))/i,
+                /(?:ausbildungsbeginn)\s*:?\s*(\d{1,2}\.\d{1,2}\.(?:\d{4}|\d{2}))/i,
+                /\b(\d{1,2}\.\d{1,2}\.(?:2026|2027|2025|2024))\b/
+              ];
+              for (const pattern of datePatterns) {
+                const match = plainText.match(pattern);
+                if (match && match[1]) {
+                  startDate = match[1];
+                  logger.info(`Found start date with regex: ${startDate}`);
+                  break;
+                }
               }
             }
+          } else if (this.website === 'azubi') {
+            try {
+              const xpath = `//dt[contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'beginn')]/following-sibling::dd[1]`;
+              const elements = await this.page.$x(xpath);
+              if (elements.length > 0) {
+                startDate = await this.page.evaluate(el => el.textContent?.trim(), elements[0]);
+              }
+            } catch (_) {}
           }
   
+          // Extract vacancies
           let vacancies = await this.extractFieldWithSelectors(
-            ['[data-testid="jp-vacancies"]', '.vacancies', '.job-vacancies', '[class*="platz"]', '[class*="vacan"]'],
+            this.config.selectors.vacancies?.split(', ') || [],
             ['Freie Plätze', 'Plätze', 'Anzahl', 'Stellen'],
             'vacancies'
           );
@@ -408,10 +461,95 @@ class AusbildungScraperAdvanced {
           }
   
           const pageContent = await this.page.content();
-          const description = TextProcessor.truncateText(TextProcessor.cleanHTML(pageContent), 1000);
+          // More aggressive cleaning for description to avoid database issues
+          let description = TextProcessor.cleanHTML(pageContent);
+          description = TextProcessor.truncateText(description, 1500); // Shorter limit for database
+          
+          // Enhanced email extraction - get both from HTML content and plain text
           const emails = TextProcessor.extractEmails(pageContent) || [];
+          
+          // If no emails found in HTML, try extracting from visible text
+          if (emails.length === 0) {
+            const plainText = await this.page.evaluate(() => document.body.innerText);
+            const plainTextEmails = TextProcessor.extractEmails(plainText) || [];
+            emails.push(...plainTextEmails);
+          }
+          
+          // Also try to find emails in specific contact sections
+          if (emails.length === 0 && this.website === 'azubi') {
+            try {
+              // Look for contact information sections
+              const contactElements = await this.page.$$eval('*', elements => {
+                return elements
+                  .filter(el => el.textContent && el.textContent.match(/E-Mail|Email|Kontakt|beratung@|info@/i))
+                  .map(el => el.textContent)
+                  .join(' ');
+              });
+              const contactEmails = TextProcessor.extractEmails(contactElements) || [];
+              emails.push(...contactEmails);
+            } catch (error) {
+              logger.warn(`Could not extract contact emails: ${error.message}`);
+            }
+          }
+          
           const phones = TextProcessor.extractPhoneNumbers(pageContent) || [];
-  
+
+          // Extract additional fields for azubi.de
+          let requirements = 'N/A';
+          let salary = 'N/A';
+          let benefits = 'N/A';
+          let duration = 'N/A';
+
+          if (this.website === 'azubi') {
+            // Extract requirements
+            requirements = await this.extractFieldWithSelectors(
+              this.config.selectors.requirements?.split(', ') || [],
+              ['Voraussetzungen', 'Anforderungen', 'Qualifikationen', 'Requirements'],
+              'requirements'
+            );
+
+            // Extract salary information
+            salary = await this.extractFieldWithSelectors(
+              this.config.selectors.salary?.split(', ') || [],
+              ['Gehalt', 'Vergütung', 'Ausbildungsvergütung', 'Lohn'],
+              'salary'
+            );
+
+            // Extract benefits
+            benefits = await this.extractFieldWithSelectors(
+              this.config.selectors.benefits?.split(', ') || [],
+              ['Leistungen', 'Vorteile', 'Benefits'],
+              'benefits'
+            );
+
+            // Extract duration
+            duration = await this.extractFieldWithSelectors(
+              this.config.selectors.duration?.split(', ') || [],
+              ['Dauer', 'Ausbildungsdauer', 'Duration'],
+              'duration'
+            );
+
+            // If fields not found with selectors, try regex fallback
+            if (requirements === 'N/A' || salary === 'N/A' || duration === 'N/A') {
+              const plainText = await this.page.evaluate(() => document.body.innerText);
+              
+              if (requirements === 'N/A') {
+                const reqMatch = plainText.match(/(?:voraussetzungen?|anforderungen?|qualifikationen?)[:\-]?\s*([^.]{20,200})/i);
+                if (reqMatch) requirements = reqMatch[1].trim();
+              }
+              
+              if (salary === 'N/A') {
+                const salaryMatch = plainText.match(/(?:gehalt|vergütung|lohn)[:\-]?\s*([^.]{10,100})/i);
+                if (salaryMatch) salary = salaryMatch[1].trim();
+              }
+              
+              if (duration === 'N/A') {
+                const durationMatch = plainText.match(/(?:dauer|ausbildungsdauer)[:\-]?\s*([^.]{5,50})/i);
+                if (durationMatch) duration = durationMatch[1].trim();
+              }
+            }
+          }
+
           const jobData = {
             title,
             institution,
@@ -421,16 +559,20 @@ class AusbildungScraperAdvanced {
             description,
             emails,
             phones,
-            url
-          };
-  
-          const validation = ValidationHelper.validateJobData(jobData);
+            url,
+            source: this.website, // Add source website info
+            // Additional fields for azubi.de
+            requirements: this.website === 'azubi' ? requirements : undefined,
+            salary: this.website === 'azubi' ? salary : undefined,
+            benefits: this.website === 'azubi' ? benefits : undefined,
+            duration: this.website === 'azubi' ? duration : undefined
+          };          const validation = ValidationHelper.validateJobData(jobData);
           if (!validation.isValid) {
             logger.warn(`Invalid job data for ${url}:`, { errors: validation.errors });
             return null;
           }
   
-          logger.success(`Scraped: [Titel: ${jobData.title}] [Firma: ${jobData.institution}] [Start: ${jobData.start_date}] [Plätze: ${jobData.vacancies}]`);
+          logger.success(`Scraped: [Titel: ${jobData.title}] [Firma: ${jobData.institution}] [Start: ${jobData.start_date}] [Plätze: ${jobData.vacancies}] [Source: ${this.website}.de]`);
           return ValidationHelper.sanitizeJobData(jobData);
   
         } catch (error) {
@@ -445,7 +587,16 @@ class AusbildungScraperAdvanced {
           const prisma = this.dbManager.prisma;
       
           const emails = Array.isArray(jobData.emails) ? jobData.emails.join(", ") : jobData.emails || "";
-          const phones = Array.isArray(jobData.phones) ? jobData.phones.join(", ") : jobData.phones || "";
+          // Improved phone number handling
+          let phones = "";
+          if (Array.isArray(jobData.phones) && jobData.phones.length > 0) {
+            // Filter and limit phone numbers to prevent database errors
+            const validPhones = jobData.phones
+              .map(phone => phone.toString().trim())
+              .filter(phone => phone.length <= 20 && phone.length >= 6) // Reasonable phone length
+              .slice(0, 3); // Limit to max 3 phone numbers
+            phones = validPhones.join(", ");
+          }
       
           const existingJob = await prisma.ausbildung.findUnique({
             where: {
@@ -456,40 +607,53 @@ class AusbildungScraperAdvanced {
             },
           });
       
+          const jobRecord = {
+            title: jobData.title,
+            institution: jobData.institution,
+            location: jobData.location || "N/A",
+            startDate: jobData.start_date || "N/A",
+            vacancies: jobData.vacancies || "N/A",
+            phones,
+            description: jobData.description ? jobData.description.substring(0, 2000) : "N/A", // Limit description length
+            emails,
+            source: jobData.source || this.website, // Add source tracking
+            // Include new azubi.de fields if available
+            requirements: jobData.requirements || "N/A",
+            salary: jobData.salary || "N/A", 
+            benefits: jobData.benefits || "N/A",
+            duration: jobData.duration || "N/A",
+            updatedAt: new Date(),
+          };
+      
           if (existingJob) {
             await prisma.ausbildung.update({
               where: { url_userId: { url: jobData.url, userId: this.userId } },
-              data: {
-                title: jobData.title,
-                institution: jobData.institution,
-                location: jobData.location || "N/A",
-                startDate: jobData.start_date || "N/A",
-                vacancies: jobData.vacancies || "N/A",
-                phones,
-                description: jobData.description || "N/A",
-                emails,
-                updatedAt: new Date(),
-              },
+              data: jobRecord,
             });
-            logger.info(`🔄 Updated existing job: ${jobData.title}`);
+            logger.info(`🔄 Updated existing job: ${jobData.title} from ${this.website}.de`);
           } else {
             await prisma.ausbildung.create({
               data: {
-                title: jobData.title,
-                institution: jobData.institution,
-                location: jobData.location || "N/A",
-                startDate: jobData.start_date || "N/A",
-                vacancies: jobData.vacancies || "N/A",
-                phones,
-                description: jobData.description || "N/A",
-                emails,
+                ...jobRecord,
                 url: jobData.url,
                 userId: this.userId, // ✅ required link
+                createdAt: new Date(),
               },
             });
-            logger.success(`💾 Saved new job: ${jobData.title}`);
+            logger.success(`💾 Saved new job: ${jobData.title} from ${this.website}.de`);
           }
         } catch (error) {
+          // Enhanced error logging for debugging
+          logger.error(`Database save error for job: ${jobData?.title || 'Unknown'}`, {
+            error: error.message,
+            jobData: {
+              title: jobData?.title,
+              institution: jobData?.institution,
+              phones: jobData?.phones,
+              phonesLength: jobData?.phones?.length,
+              url: jobData?.url
+            }
+          });
           ErrorHandler.handleDatabaseError(error, "save job");
         }
       }
@@ -497,6 +661,7 @@ class AusbildungScraperAdvanced {
   
       async startScraping(numPages = 3) {
         logger.info('🕷️  Starting scraping process...');
+        logger.info(`📋 Configuration: Website: ${this.website}, Search: "${decodeURIComponent(this.searchTerm)}", Location: "${decodeURIComponent(this.location) || 'All Germany'}", Pages: ${numPages}`);
         let totalResults = 0;
         try {
           await this.initializeBrowser();
@@ -506,12 +671,12 @@ class AusbildungScraperAdvanced {
     
           for (let page = 1; page <= numPages; page++) {
             logger.info(`\n📄 Processing page ${page}/${numPages}`);
-            const searchUrl = `${this.baseUrl}?search=${this.searchTerm}%7C${this.location}&page=${page}`;
+            const searchUrl = `${this.config.baseUrl}${this.config.searchParams(this.searchTerm, this.location, page)}`;
             console.log('Navigating to search URL:', searchUrl);
             try { 
               await this.page.goto(searchUrl, { waitUntil: 'networkidle2', timeout: config.scraping.requestTimeout });
-              await this.page.waitForSelector("a[href^='/stellen/']", { timeout: config.scraping.requestTimeout });
-              const jobUrls = await this.page.$$eval("a[href^='/stellen/']", links =>
+              await this.page.waitForSelector(this.config.jobLinkSelector, { timeout: config.scraping.requestTimeout });
+              const jobUrls = await this.page.$$eval(this.config.jobLinkSelector, links =>
                 [...new Set(links.map(link => link.href))]
               );
               logger.info(`Found ${jobUrls.length} job listings on page ${page}`);
@@ -524,6 +689,13 @@ class AusbildungScraperAdvanced {
     
                 try {
                   const jobData = await this.scrapeJobDetails(jobUrl);
+                  // Only scrape 2026 jobs - skip all other years
+                  if (this.website === 'ausbildung' && jobData && jobData.start_date) {
+                    if (!jobData.start_date.includes('2026')) {
+                      logger.info(`⏭️  Skipping non-2026 job: ${jobData.title} (Start: ${jobData.start_date})`);
+                      continue;
+                    }
+                  }
                   if (jobData && jobData.emails && jobData.emails.length > 0) {
                     await this.saveToDatabase(jobData);
                     totalResults++;
@@ -566,6 +738,11 @@ class AusbildungScraperAdvanced {
         }
         return totalResults;
       }
+
+      // Legacy method - scraper now filters for 2026 jobs only
+      setSkip2025(skip = true) {
+        this.skip2025 = skip; // This property is no longer used in the new filtering logic
+      }
   
     async cleanup() {
       try {
@@ -580,6 +757,8 @@ class AusbildungScraperAdvanced {
       }
     }
  }
+
+export { AusbildungScraperAdvanced };
 
 export const addAusbildung = async (req, res) => {
     try {
@@ -650,26 +829,33 @@ export const getAussbildung = async (req, res) => {
 export const scrapeAusbildung = async (req, res) => {
     try {
       const userId = await getUserIdFromToken(req);
-      const { searchTerm, location, numPages } = req.body;
+      const { searchTerm, location, numPages, website } = req.body;
   
       if (!searchTerm) {
         return res.status(400).json({ error: "searchTerm is required.", success: false });
       }
+      
+      // Validate website parameter
+      const validWebsites = ['ausbildung', 'azubi'];
+      const selectedWebsite = website && validWebsites.includes(website) ? website : 'ausbildung';
   
-      const scraper = new AusbildungScraperAdvanced(searchTerm, location, userId);
-      const { savedJobs, errors, totalProcessedUrls } = await scraper.startScraping(Number(numPages) || 3);
+      logger.info(`🚀 Starting scraping request: ${searchTerm} in ${location || 'All Germany'} from ${selectedWebsite}.de`);
   
-      let message = "Scraping completed successfully.";
-      if (errors.length > 0) {
-        message += ` However, ${errors.length} errors occurred during the process.`;
-        logger.error("Scraping errors encountered:", errors);
+      const scraper = new AusbildungScraperAdvanced(searchTerm, location, userId, selectedWebsite);
+      const totalResults = await scraper.startScraping(Number(numPages) || 3);
+  
+      let message = `Scraping completed successfully from ${selectedWebsite}.de.`;
+      if (scraper.errors.length > 0) {
+        message += ` However, ${scraper.errors.length} errors occurred during the process.`;
+        logger.error("Scraping errors encountered:", scraper.errors);
       }
   
       res.status(200).json({
         message,
-        savedJobs,
-        totalProcessedUrls,
-        errors: errors.map(e => ({ url: e.url, page: e.page, error: e.error })),
+        savedJobs: totalResults,
+        totalProcessedUrls: scraper.processedUrls.size,
+        website: selectedWebsite,
+        errors: scraper.errors.map(e => ({ url: e.url, page: e.page, error: e.error })),
         success: true,
       });
   
@@ -690,10 +876,6 @@ export const scrapeAusbildung = async (req, res) => {
           details: error, // raw error
           success: false,
         });
-      
-      
-      
-      
     }
 };
 
@@ -1067,6 +1249,46 @@ export const deleteAusbildung = async (req, res) => {
       const status = error.status || 500;
       res.status(status).json({ error: error.message || 'Failed to delete Ausbildung.' });
     }
+};
+
+export const deleteAllAusbildung2025 = async (req, res) => {
+  try {
+    const userId = await getUserIdFromToken(req);
+    
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    // Delete all Ausbildung records for 2025 for the authenticated user
+    const deleted = await prisma.ausbildung.deleteMany({
+      where: {
+        AND: [
+          { userId: userId }, // Only delete user's own records
+          {
+            OR: [
+              { startDate: { contains: '2025' } },
+              { startDate: { contains: '.2025' } },
+              { startDate: { contains: '/2025' } },
+              { startDate: { contains: '-2025' } }
+            ]
+          }
+        ]
+      },
+    });
+
+    logger.info(`User ${userId} deleted ${deleted.count} Ausbildung records for 2025`);
+    res.status(200).json({ 
+      message: `Successfully deleted ${deleted.count} Ausbildung records for 2025.`,
+      count: deleted.count,
+      success: true
+    });
+  } catch (error) {
+    logger.error("Delete All Ausbildung 2025 Error:", error);
+    res.status(500).json({
+      error: "Failed to delete Ausbildung records for 2025.",
+      success: false,
+    });
+  }
 };
 
 

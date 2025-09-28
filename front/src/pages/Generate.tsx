@@ -12,16 +12,33 @@ import {
   ArrowLeft,
   Wand2,
   FileCheck,
-  X
+  X,
+  File,
+  Calendar
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
+import { Badge } from '@/components/ui/badge';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
+
+type CvOption = 'upload' | 'existing';
+
+type ExistingCv = {
+  id: string;
+  name: string;
+  createdAt: string;
+  size?: string;
+};
 
 const Generate = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationComplete, setGenerationComplete] = useState(false);
   const [lettersGenerated, setLettersGenerated] = useState(0);
+  const [existingCVs, setExistingCVs] = useState<ExistingCv[]>([]);
+  const [selectedExistingCV, setSelectedExistingCV] = useState<string>('');
+  const [cvOption, setCvOption] = useState<CvOption>('upload');
   const token = localStorage.getItem("token");
 
   
@@ -30,24 +47,93 @@ const Generate = () => {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // MODIFIED: useEffect to fetch the number of pending jobs when the component loads
+  // MODIFIED: useEffect to fetch the number of pending jobs and existing CVs when the component loads
   useEffect(() => {
-    const fetchPendingJobsCount = async () => {
+    const fetchData = async () => {
       try {
+        // Fetch stats
         const response = await fetch("http://localhost:3000/api/ausbildung/stats", {
           headers: { Authorization: `Bearer ${token}` },
-
         });
         const stats = await response.json();
         const pendingCount = stats.totalJobs - stats.jobsWithMotivationLetters;
         setJobsToProcess(pendingCount >= 0 ? pendingCount : 0);
+
+        // Fetch existing CVs from documents endpoint
+        try {
+          const documentsResponse = await fetch("http://localhost:3000/api/ausbildung/documents", {
+            method: 'GET',
+            headers: { 
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (documentsResponse.ok) {
+            const documents = await documentsResponse.json();
+            // Filter documents that could be CVs
+            const cvDocuments = documents.filter(doc => 
+              doc.originalName.toLowerCase().includes('cv') || 
+              doc.originalName.toLowerCase().includes('lebenslauf') ||
+              doc.mimeType === 'application/pdf'
+            ).map(doc => ({
+              id: doc.id,
+              name: doc.originalName,
+              createdAt: doc.createdAt,
+              size: `${(doc.fileSize / 1024).toFixed(1)} KB`
+            }));
+            
+            setExistingCVs(cvDocuments);
+            
+            // If we have existing CVs, default to existing option
+            if (cvDocuments.length > 0) {
+              setCvOption('existing');
+              setSelectedExistingCV(cvDocuments[0].id);
+            }
+          }
+        } catch (cvError) {
+          console.log('No existing CVs found or error fetching documents:', cvError);
+        }
       } catch (error) {
-        toast.error(error.message || 'Failed to get stats from the server.');
+        toast.error('Failed to get stats from the server.');
       }
     };
 
-    fetchPendingJobsCount();
+    fetchData();
   }, []); // Empty array ensures this runs only once on mount
+
+  // Function to refresh existing CVs list
+  const refreshExistingCVs = async () => {
+    try {
+      const documentsResponse = await fetch("http://localhost:3000/api/ausbildung/documents", {
+        method: 'GET',
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (documentsResponse.ok) {
+        const documents = await documentsResponse.json();
+        // Filter documents that could be CVs
+        const cvDocuments = documents.filter(doc => 
+          doc.originalName.toLowerCase().includes('cv') || 
+          doc.originalName.toLowerCase().includes('lebenslauf') ||
+          doc.mimeType === 'application/pdf'
+        ).map(doc => ({
+          id: doc.id,
+          name: doc.originalName,
+          createdAt: doc.createdAt,
+          size: `${(doc.fileSize / 1024).toFixed(1)} KB`
+        }));
+        
+        setExistingCVs(cvDocuments);
+        setSelectedExistingCV(prev => prev || (cvDocuments[0]?.id ?? ''));
+      }
+    } catch (error) {
+      console.log('Error refreshing CVs:', error);
+    }
+  };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -61,8 +147,27 @@ const Generate = () => {
         return;
       }
       setSelectedFile(file);
+      setCvOption('upload');
       toast.success('CV uploaded successfully');
     }
+  };
+
+  const handleCvOptionChange = (value: string) => {
+    const option = value as CvOption;
+    setCvOption(option);
+
+    if (option === 'upload') {
+      setSelectedExistingCV('');
+      return;
+    }
+
+    // Switching to existing CVs
+    setSelectedFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+
+    setSelectedExistingCV(prev => prev || (existingCVs[0]?.id ?? ''));
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -70,6 +175,7 @@ const Generate = () => {
     const file = e.dataTransfer.files[0];
     if (file && file.type === 'application/pdf') {
       setSelectedFile(file);
+      setCvOption('upload');
       toast.success('CV uploaded successfully');
     } else {
       toast.error('Please drop a valid PDF file.');
@@ -87,26 +193,46 @@ const Generate = () => {
     }
   };
 
-  // MODIFIED: This function now makes a real API call
+  // MODIFIED: This function now makes a real API call with CV options
   const handleGenerate = async () => {
-    if (!selectedFile) {
+    if (cvOption === 'upload' && !selectedFile) {
       toast.error('Please upload your CV first');
+      return;
+    }
+    
+    if (cvOption === 'existing' && !selectedExistingCV) {
+      toast.error('Please select an existing CV');
       return;
     }
 
     setIsGenerating(true);
     setGenerationComplete(false);
 
-    // Use FormData to send the file to the backend
-    const formData = new FormData();
-    formData.append('cv', selectedFile);
-
     try {
-      const response = await fetch('http://localhost:3000/api/ausbildung/generate-letters', {
-        method: 'POST',
-        body: formData, // The browser will automatically set the correct headers
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      let response;
+      
+      if (cvOption === 'upload') {
+        // Upload new CV
+        const formData = new FormData();
+        formData.append('cv', selectedFile);
+        
+        response = await fetch('http://localhost:3000/api/ausbildung/generate-letters', {
+          method: 'POST',
+          body: formData,
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      } else {
+        // Use existing CV
+        const formData = new FormData();
+        formData.append('useExistingCv', 'true');
+        formData.append('existingCvId', selectedExistingCV);
+        
+        response = await fetch('http://localhost:3000/api/ausbildung/generate-letters', {
+          method: 'POST',
+          body: formData,
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      }
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -116,7 +242,13 @@ const Generate = () => {
       const result = await response.json();
       setLettersGenerated(result.generatedCount || 0);
       setGenerationComplete(true);
-      toast.success(`Successfully generated ${result.generatedCount || 0} motivation letters!`);
+      
+      // If we uploaded a new CV, refresh the existing CVs list
+      if (cvOption === 'upload') {
+        await refreshExistingCVs();
+      }
+      
+      toast.success(`Successfully generated ${result.generatedCount || 0} motivation letters using ${result.cvSource} CV!`);
 
     } catch (error) {
       console.error(error);
@@ -162,67 +294,138 @@ const Generate = () => {
             <p className="text-muted-foreground max-w-2xl mx-auto">
               Upload your CV and let AI create personalized motivation letters for all your scraped job opportunities.
             </p>
+            
+            {/* CV Selection Options */}
+            {existingCVs.length > 0 && (
+              <div className="mt-6 max-w-md mx-auto">
+                <RadioGroup value={cvOption} onValueChange={handleCvOptionChange} className="flex gap-6 justify-center">
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="upload" id="upload" />
+                    <Label htmlFor="upload">Upload New CV</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="existing" id="existing" />
+                    <Label htmlFor="existing">Use Existing CV</Label>
+                  </div>
+                </RadioGroup>
+              </div>
+            )}
           </div>
         </motion.div>
 
         <div className="max-w-2xl mx-auto space-y-6">
-          {/* File Upload Section */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.1 }}
-          >
-            <Card className="shadow-elegant">
-              <CardHeader>
-                <CardTitle className="text-xl font-display flex items-center gap-2">
-                  <Upload className="w-5 h-5 text-primary" />
-                  Upload Your CV
-                </CardTitle>
-                <CardDescription>
-                  Upload your CV in PDF format (max 5MB). This will be used to generate personalized motivation letters.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {!selectedFile ? (
-                  <div
-                    className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center hover:border-primary/50 transition-colors cursor-pointer"
-                    onDrop={handleDrop}
-                    onDragOver={handleDragOver}
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    <Upload className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-medium mb-2">Drop your CV here</h3>
-                    <p className="text-muted-foreground mb-4">
-                      or click to browse
-                    </p>
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <FileText className="w-10 h-10 text-primary" />
-                      <div>
-                        <h4 className="font-medium">{selectedFile.name}</h4>
-                        <p className="text-sm text-muted-foreground">
-                          {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
-                        </p>
+          {/* Existing CV Selection */}
+          {cvOption === 'existing' && existingCVs.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+            >
+              <Card className="shadow-elegant">
+                <CardHeader>
+                  <CardTitle className="text-xl font-display flex items-center gap-2">
+                    <File className="w-5 h-5 text-primary" />
+                    Select Existing CV
+                  </CardTitle>
+                  <CardDescription>
+                    Choose from your previously uploaded CV documents.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {existingCVs.map((cv) => (
+                      <div 
+                        key={cv.id}
+                        className={`p-4 rounded-lg border cursor-pointer transition-all ${
+                          selectedExistingCV === cv.id
+                            ? 'border-primary bg-primary/5'
+                            : 'border-muted hover:border-primary/50'
+                        }`}
+                        onClick={() => setSelectedExistingCV(cv.id)}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <FileText className="w-8 h-8 text-primary" />
+                            <div>
+                              <h4 className="font-medium">{cv.name}</h4>
+                              <p className="text-sm text-muted-foreground flex items-center gap-1">
+                                <Calendar className="w-3 h-3" />
+                                {new Date(cv.createdAt).toLocaleDateString()}
+                                {cv.size && ` • ${cv.size}`}
+                              </p>
+                            </div>
+                          </div>
+                          {selectedExistingCV === cv.id && (
+                            <CheckCircle className="w-5 h-5 text-primary" />
+                          )}
+                        </div>
                       </div>
-                    </div>
-                    <Button variant="ghost" size="sm" onClick={removeFile}>
-                      <X className="w-4 h-4" />
-                    </Button>
+                    ))}
                   </div>
-                )}
-                
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".pdf"
-                  className="hidden"
-                  onChange={handleFileSelect}
-                />
-              </CardContent>
-            </Card>
-          </motion.div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+
+          {/* File Upload Section */}
+          {cvOption === 'upload' && (
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+            >
+              <Card className="shadow-elegant">
+                <CardHeader>
+                  <CardTitle className="text-xl font-display flex items-center gap-2">
+                    <Upload className="w-5 h-5 text-primary" />
+                    Upload Your CV
+                  </CardTitle>
+                  <CardDescription>
+                    Upload your CV in PDF format (max 5MB). This will be used to generate personalized motivation letters.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {!selectedFile ? (
+                    <div
+                      className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center hover:border-primary/50 transition-colors cursor-pointer"
+                      onDrop={handleDrop}
+                      onDragOver={handleDragOver}
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      <Upload className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                      <h3 className="text-lg font-medium mb-2">Drop your CV here</h3>
+                      <p className="text-muted-foreground mb-4">
+                        or click to browse
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <FileText className="w-10 h-10 text-primary" />
+                        <div>
+                          <h4 className="font-medium">{selectedFile.name}</h4>
+                          <p className="text-sm text-muted-foreground">
+                            {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                          </p>
+                        </div>
+                      </div>
+                      <Button variant="ghost" size="sm" onClick={removeFile}>
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  )}
+                  
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".pdf"
+                    className="hidden"
+                    onChange={handleFileSelect}
+                  />
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
 
           {/* Generation Section */}
           <motion.div
@@ -291,7 +494,12 @@ const Generate = () => {
                 <Button
                   onClick={handleGenerate}
                   className="w-full hero-button"
-                  disabled={!selectedFile || isGenerating || generationComplete || jobsToProcess === 0}
+                  disabled={
+                    isGenerating ||
+                    generationComplete ||
+                    jobsToProcess === 0 ||
+                    (cvOption === 'upload' ? !selectedFile : !selectedExistingCV)
+                  }
                 >
                   {isGenerating ? (
                     <><LoadingSpinner size="sm" className="mr-2" />Generating...</>

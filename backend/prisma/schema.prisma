@@ -19,6 +19,7 @@ model User {
   ausbildungen Ausbildung[] // One-to-many relation
   campaigns   EmailCampaign[]
   documents   Document[]
+  integration UserIntegration?
 }
 
 model Ausbildung {
@@ -32,9 +33,16 @@ model Ausbildung {
   url                  String  // Remove @unique to allow same URL for different users
   description          String  @default("N/A")
   emails               String
-  motivationLetterPath String? @map("motivation_letter_path")
+  motivationLetter     Bytes?  @map("motivation_letter") // Store as binary data instead of path
   userId               String  // Make required (not optional)
   status               String  @default("Pending")
+  source               String  @default("ausbildung") // Add source field for website tracking
+  
+  // Additional fields for azubi.de and enhanced data
+  requirements         String? @default("N/A")
+  salary               String? @default("N/A")
+  benefits             String? @default("N/A")
+  duration             String? @default("N/A")
   
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -73,7 +81,7 @@ model Document {
   userId       String
   filename     String
   originalName String
-  filePath     String
+  fileData     Bytes    // Store file as binary data
   fileSize     Int
   mimeType     String
   createdAt    DateTime @default(now())
@@ -82,4 +90,21 @@ model Document {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("documents")
+}
+
+model UserIntegration {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  geminiApiKey String?
+  geminiModel  String?  @default("gemini-1.5-flash")
+  smtpUser     String?
+  smtpPass     String?
+  smtpHost     String?  @default("smtp.gmail.com")
+  smtpPort     Int?     @default(465)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_integrations")
 }

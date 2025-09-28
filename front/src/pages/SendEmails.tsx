@@ -45,15 +45,19 @@ const api = {
     return response.json();
   },
   
-  // Simplified to match backend - just send all user emails
-  async sendAllUserEmails() {
+  // Updated to support selected emails and files
+  async sendSelectedEmails(selectedEmails, selectedFiles, jobIds = []) {
     const response = await fetch(`${API_BASE_URL}/email/send`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${localStorage.getItem('token')}`
       },
-      body: JSON.stringify({}) // Backend doesn't need any body data
+      body: JSON.stringify({
+        selectedEmails,
+        selectedFiles,
+        jobIds
+      })
     });
     if (!response.ok) {
         const err = await response.json();
@@ -71,6 +75,7 @@ const SendEmails = () => {
 
   const [selectedJobs, setSelectedJobs] = useState([]);
   const [selectedDocuments, setSelectedDocuments] = useState([]);
+  const [selectedEmails, setSelectedEmails] = useState([]);
   const [isSending, setIsSending] = useState(false);
   const [progress, setProgress] = useState(0);
   const [sendingComplete, setSendingComplete] = useState(false);
@@ -100,9 +105,23 @@ const SendEmails = () => {
   }, []);
   
   const readyJobs = useMemo(() => 
-    allJobs.filter(job => job.motivationLetterPath), 
+    allJobs.filter(job => job.motivationLetter), 
     [allJobs]
   );
+  
+  // Get all unique emails from selected jobs
+  const availableEmails = useMemo(() => {
+    const emailSet = new Set();
+    readyJobs.forEach(job => {
+      if (job.emails) {
+        job.emails.split(',').forEach(email => {
+          const cleanEmail = email.trim();
+          if (cleanEmail) emailSet.add(cleanEmail);
+        });
+      }
+    });
+    return Array.from(emailSet);
+  }, [readyJobs]);
   
   const handleSelectAll = (checked) => {
     setSelectedJobs(checked ? readyJobs.map(job => job.id) : []);
@@ -114,6 +133,10 @@ const SendEmails = () => {
 
   const handleDocumentSelect = (documentId, checked) => {
     setSelectedDocuments(prev => checked ? [...prev, documentId] : prev.filter(id => id !== documentId));
+  };
+
+  const handleEmailSelect = (email, checked) => {
+    setSelectedEmails(prev => checked ? [...prev, email] : prev.filter(e => e !== email));
   };
 
   const handleSendEmails = async () => {
@@ -132,7 +155,11 @@ const SendEmails = () => {
         setProgress(prev => Math.min(prev + 15, 90));
       }, 300);
 
-      const result = await api.sendAllUserEmails();
+      const result = await api.sendSelectedEmails(
+        selectedEmails, 
+        selectedDocuments, 
+        selectedJobs
+      );
 
       clearInterval(progressInterval);
       setProgress(100);
@@ -146,15 +173,36 @@ const SendEmails = () => {
         id: Date.now(),
         timestamp: new Date(),
         sentCount: result.sentCount || 0,
-        totalJobs: readyJobs.length,
+        totalJobs: selectedJobs.length || readyJobs.length,
         errorCount: (result.errors || []).length,
         status: (result.errors && result.errors.length > 0) ? 'completed_with_errors' : 'completed'
       };
       setSentHistory(prev => [newHistoryEntry, ...prev.slice(0, 4)]);
       
+      // Refresh data to update job statuses
       if (result.sentCount > 0) {
+        try {
+          const [jobsData, documentsData] = await Promise.all([
+            api.getAusbildungen(),
+            api.getDocuments()
+          ]);
+          setAllJobs(jobsData);
+          setDocuments(documentsData);
+          
+          // Reset selections since jobs might have been updated
+          setSelectedJobs([]);
+          setSelectedDocuments([]);
+          setSelectedEmails([]);
+          
+          toast.success(`Successfully sent ${result.sentCount} emails! Job statuses updated.`);
+        } catch (refreshError) {
+          console.error('Failed to refresh data:', refreshError);
+          toast.success(`Successfully sent ${result.sentCount} emails!`);
+        }
+      } else {
         toast.success(`Successfully sent ${result.sentCount} emails!`);
       }
+      
       if (result.errors && result.errors.length > 0) {
         toast.warning(`${result.errors.length} emails failed. See details below.`);
       }
@@ -170,6 +218,7 @@ const SendEmails = () => {
   const handleReset = () => {
     setSelectedJobs([]);
     setSelectedDocuments([]);
+    setSelectedEmails([]);
     setProgress(0);
     setSendingComplete(false);
     setSentCount(0);
@@ -321,7 +370,6 @@ const SendEmails = () => {
                                           Select additional documents to attach to all emails (CV and motivation letters are automatically included)
                                         </p>
                                         <DocumentManager 
-                                          documents={documents} 
                                           selectedDocuments={selectedDocuments} 
                                           onDocumentSelect={handleDocumentSelect} 
                                         />

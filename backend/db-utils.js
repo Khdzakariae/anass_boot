@@ -2,6 +2,7 @@ import { PrismaClient } from '@prisma/client';
 import { logger } from './utils.js';
 import fs from 'fs';
 import path from 'path';
+import { encryptSecret, decryptSecret } from './security.js';
 
 class DatabaseManager {
   constructor() {
@@ -87,41 +88,43 @@ class DatabaseManager {
   }
 
   /**
-   * Saves a document's metadata to the database.
+   * Saves a document's data to the database.
    * @param {string} userId - The ID of the user uploading the document.
-   * @param {object|string} fileOrPath - The file object from Multer or a file path string.
+   * @param {object|Buffer} fileOrData - The file object from Multer (with buffer) or binary data.
    * @param {string} originalName - Original name (for generated files).
+   * @param {string} mimeType - MIME type of the file.
    * @returns {Promise<object>} The saved document record from the database.
    */
-  async saveDocument(userId, fileOrPath, originalName = null) {
+  async saveDocument(userId, fileOrData, originalName = null, mimeType = null) {
     try {
       let data;
       
-      if (typeof fileOrPath === 'string') {
-        // Generated letter path
-        const stats = fs.statSync(fileOrPath);
+      if (Buffer.isBuffer(fileOrData)) {
+        // Direct binary data (for generated files)
         data = {
           userId,
-          filename: path.basename(fileOrPath),
-          originalName: originalName || path.basename(fileOrPath),
-          filePath: fileOrPath,
-          mimeType: 'application/pdf',
-          fileSize: stats.size,
+          filename: originalName || `document_${Date.now()}.pdf`,
+          originalName: originalName || `document_${Date.now()}.pdf`,
+          fileData: fileOrData,
+          mimeType: mimeType || 'application/pdf',
+          fileSize: fileOrData.length,
+        };
+      } else if (fileOrData.buffer) {
+        // Uploaded file (multer with memory storage)
+        data = {
+          userId,
+          filename: `${Date.now()}_${fileOrData.originalname}`,
+          originalName: fileOrData.originalname,
+          fileData: fileOrData.buffer,
+          mimeType: fileOrData.mimetype,
+          fileSize: fileOrData.size,
         };
       } else {
-        // Uploaded file (multer)
-        data = {
-          userId,
-          filename: fileOrPath.filename,
-          originalName: fileOrPath.originalname,
-          filePath: fileOrPath.path,
-          mimeType: fileOrPath.mimetype,
-          fileSize: fileOrPath.size,
-        };
+        throw new Error('Invalid file data provided');
       }
 
       const document = await this.prisma.document.create({ data });
-      logger.success(`Document saved to database: ${document.originalName}`);
+      logger.success(`Document saved to database: ${document.originalName} (${document.fileSize} bytes)`);
       return document;
     } catch (error) {
       logger.error(`Failed to save document to database: ${error.message}`);
@@ -138,11 +141,47 @@ class DatabaseManager {
     try {
       const documents = await this.prisma.document.findMany({
         where: { userId },
+        select: {
+          id: true,
+          filename: true,
+          originalName: true,
+          mimeType: true,
+          fileSize: true,
+          createdAt: true,
+          updatedAt: true
+          // Exclude fileData from general listing for performance
+        },
         orderBy: { createdAt: 'desc' },
       });
       return documents;
     } catch (error) {
       logger.error(`Failed to fetch user documents: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Retrieves a specific document with file data.
+   * @param {string} documentId - The document ID.
+   * @param {string} userId - The user ID (for security).
+   * @returns {Promise<object>} The document with file data.
+   */
+  async getDocumentWithData(documentId, userId) {
+    try {
+      const document = await this.prisma.document.findFirst({
+        where: { 
+          id: documentId,
+          userId: userId
+        }
+      });
+      
+      if (!document) {
+        throw new Error('Document not found or access denied');
+      }
+      
+      return document;
+    } catch (error) {
+      logger.error(`Failed to fetch document data: ${error.message}`);
       throw error;
     }
   }
@@ -216,10 +255,10 @@ class DatabaseManager {
     });
   }
   
-  async updateMotivationLetterPath(jobId, path) {
+  async updateMotivationLetterData(jobId, letterData) {
     return await this.prisma.ausbildung.update({
       where: { id: jobId },
-      data: { motivationLetterPath: path },
+      data: { motivationLetter: letterData },
     });
   }
 
@@ -236,18 +275,67 @@ class DatabaseManager {
    * This is used by the letter generator.
    * @returns {Promise<Array<object>>} A list of jobs needing letters.
    */
-  async findJobsWithoutMotivationLetter() {
+  async findJobsWithoutMotivationLetter(userId) {
+    if (!userId) {
+      throw new Error('User ID is required to fetch jobs');
+    }
+
     const jobs = await this.prisma.ausbildung.findMany({
       where: {
         AND: [
-          { emails: { not: '[]' } }, 
-          { motivationLetterPath: null }
+          { userId },
+          { emails: { not: "" } },
+          { OR: [
+            { motivationLetter: null },
+            { motivationLetter: { equals: Buffer.alloc(0) } }
+          ]}
         ],
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "asc" },
     });
-    // No need to transform output here as it's used internally by the generator
-    return jobs;
+    return jobs.map(j => this._transformJobForOutput(j));
+  }
+
+  _transformIntegrationForOutput(record) {
+    if (!record) return null;
+    return {
+      ...record,
+      geminiApiKey: decryptSecret(record.geminiApiKey),
+      smtpUser: decryptSecret(record.smtpUser),
+      smtpPass: decryptSecret(record.smtpPass),
+    };
+  }
+
+  _transformIntegrationForStorage(settings) {
+    return {
+      geminiApiKey: settings.geminiApiKey ? encryptSecret(settings.geminiApiKey) : null,
+      geminiModel: settings.geminiModel || undefined,
+      smtpUser: settings.smtpUser ? encryptSecret(settings.smtpUser) : null,
+      smtpPass: settings.smtpPass ? encryptSecret(settings.smtpPass) : null,
+      smtpHost: settings.smtpHost || undefined,
+      smtpPort: settings.smtpPort ? Number(settings.smtpPort) : undefined,
+    };
+  }
+
+  async getUserIntegration(userId) {
+    const record = await this.prisma.userIntegration.findUnique({ where: { userId } });
+    return this._transformIntegrationForOutput(record);
+  }
+
+  async upsertUserIntegration(userId, settings) {
+    const storageData = this._transformIntegrationForStorage(settings);
+    const record = await this.prisma.userIntegration.upsert({
+      where: { userId },
+      update: {
+        ...storageData,
+        updatedAt: new Date(),
+      },
+      create: {
+        userId,
+        ...storageData,
+      },
+    });
+    return this._transformIntegrationForOutput(record);
   }
 
   async getJobStats(userId) {

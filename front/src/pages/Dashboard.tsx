@@ -20,7 +20,8 @@ import {
   Mail,
   CheckCircle,
   Clock,
-  Send
+  Send,
+  RefreshCw
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
@@ -42,55 +43,55 @@ const Dashboard = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
 
+  const fetchData = async () => {
+    const token = localStorage.getItem("token");
+
+    if (!token || token === "null") {
+      setError("No valid authentication token found. Please log in again.");
+      setIsLoading(false);
+      toast.error("No valid authentication token found. Please log in again.");
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      // Fetch jobs
+      const jobsResponse = await fetch("http://localhost:3000/api/ausbildung", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!jobsResponse.ok) throw new Error("Failed to fetch jobs");
+      const jobsData = await jobsResponse.json();
+      setJobs(jobsData);
+
+      // Fetch stats
+      const statsResponse = await fetch("http://localhost:3000/api/ausbildung/stats", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!statsResponse.ok) throw new Error("Failed to fetch stats");
+      const statsData = await statsResponse.json();
+      setStats(statsData);
+
+      toast.success("Dashboard data refreshed successfully!");
+    } catch (err) {
+      setError(err.message);
+      toast.error(err.message || "Failed to load dashboard data.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchData = async () => {
-      const token = localStorage.getItem("token");
-
-      if (!token || token === "null") {
-        setError("No valid authentication token found. Please log in again.");
-        setIsLoading(false);
-        toast.error("No valid authentication token found. Please log in again.");
-        return;
-      }
-
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        // Fetch jobs
-        const jobsResponse = await fetch("http://localhost:3000/api/ausbildung", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        if (!jobsResponse.ok) throw new Error("Failed to fetch jobs");
-        const jobsData = await jobsResponse.json();
-        setJobs(jobsData);
-
-        // Fetch stats
-        const statsResponse = await fetch("http://localhost:3000/api/ausbildung/stats", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        if (!statsResponse.ok) throw new Error("Failed to fetch stats");
-        const statsData = await statsResponse.json();
-        setStats(statsData);
-
-        toast.success("Dashboard data loaded successfully!");
-      } catch (err) {
-        setError(err.message);
-        toast.error(err.message || "Failed to load dashboard data.");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     fetchData();
   }, []);
 
   // Helper function to determine job status
   const getJobStatus = (job) => {
     if (job.status === "Done") return "done";
-    if (job.motivationLetterPath) return "ready";
+    if (job.status === "Ready to Send" || job.motivationLetter) return "ready";
     return "pending";
   };
 
@@ -176,6 +177,15 @@ const Dashboard = () => {
               </p>
             </div>
             <div className="flex gap-3">
+              <Button 
+                onClick={fetchData} 
+                disabled={isLoading}
+                variant="outline"
+                className="flex items-center"
+              >
+                <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
               <Button asChild className="hero-button">
                 <Link to="/scrape">
                   <Plus className="w-4 h-4 mr-2" />
@@ -298,6 +308,7 @@ const Dashboard = () => {
                       <TableHead>Institution</TableHead>
                       <TableHead>Location</TableHead>
                       <TableHead>Start Date</TableHead>
+                      <TableHead>Source</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
@@ -325,6 +336,11 @@ const Dashboard = () => {
                             <Calendar className="w-4 h-4 text-muted-foreground" />
                             {job.startDate || 'N/A'}
                           </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="text-xs">
+                            {job.source ? `${job.source}.de` : 'ausbildung.de'}
+                          </Badge>
                         </TableCell>
                         <TableCell>
                           <Badge className={getStatusColor(job)}>

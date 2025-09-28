@@ -12,6 +12,8 @@ import Dashboard from "./pages/Dashboard";
 import Scrape from "./pages/Scrape";
 import Generate from "./pages/Generate";
 import SendEmails from "./pages/SendEmails";
+import Documents from "./pages/Documents";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -59,6 +61,22 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <SendEmails />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/documents"
+              element={
+                <ProtectedRoute>
+                  <Documents />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/settings"
+              element={
+                <ProtectedRoute>
+                  <Settings />
                 </ProtectedRoute>
               }
             />

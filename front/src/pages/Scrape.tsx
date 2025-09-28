@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { Progress } from '@/components/ui/progress';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 import { 
   Search, 
@@ -16,12 +17,29 @@ import {
   CheckCircle,
   ArrowLeft,
   Bot,
-  Zap
+  Zap,
+  Globe,
+  Target
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
+import { Badge } from '@/components/ui/badge';
+
+const websiteConfig = {
+  ausbildung: {
+    name: 'ausbildung.de',
+    description: 'Germany\'s largest apprenticeship portal with comprehensive job listings',
+    color: 'bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-300'
+  },
+  azubi: {
+    name: 'azubi.de', 
+    description: 'Popular German training platform with verified company partnerships',
+    color: 'bg-green-50 border-green-200 text-green-800 dark:bg-green-900/20 dark:border-green-800 dark:text-green-300'
+  }
+};
 
 const Scrape = () => {
+  const [website, setWebsite] = useState('ausbildung');
   const [searchTerm, setSearchTerm] = useState('');
   const [location, setLocation] = useState('');
   const [pages, setPages] = useState(3);
@@ -29,9 +47,9 @@ const Scrape = () => {
   const [progress, setProgress] = useState(0);
   const [scrapingComplete, setScrapingComplete] = useState(false);
   const [jobsFound, setJobsFound] = useState(0);
+  const [currentStatus, setCurrentStatus] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
-
     e.preventDefault();
   
     if (!searchTerm) {
@@ -43,24 +61,28 @@ const Scrape = () => {
       toast.error('Number of pages must be between 1 and 10');
       return;
     }
-
-    // if (!searchTerm || !location) {
-    //   toast.error('Please fill in all required fields');
-    //   return;
-    // }
-  
-    // if (pages < 1 || pages > 10) {
-    //   toast.error('Number of pages must be between 1 and 10');
-    //   return;
-    // }
   
     setIsLoading(true);
     setProgress(0);
     setScrapingComplete(false);
     setJobsFound(0);
+    setCurrentStatus('Initializing scraper...');
     const token = localStorage.getItem('token');
   
     try {
+      // Simulate progress updates
+      const progressInterval = setInterval(() => {
+        setProgress(prev => {
+          const newProgress = prev + Math.random() * 10;
+          if (newProgress < 20) setCurrentStatus('Launching browser...');
+          else if (newProgress < 40) setCurrentStatus('Navigating to search results...');
+          else if (newProgress < 60) setCurrentStatus('Extracting job listings...');
+          else if (newProgress < 80) setCurrentStatus('Scraping job details...');
+          else if (newProgress < 95) setCurrentStatus('Filtering jobs with emails...');
+          return Math.min(newProgress, 90);
+        });
+      }, 500);
+
       const response = await fetch('http://localhost:3000/api/ausbildung/scrape', {
         method: 'POST',
         headers: {
@@ -71,20 +93,28 @@ const Scrape = () => {
           searchTerm,
           location,
           numPages: pages,
+          website: website // Send the selected website
         }),
       });
+
+      clearInterval(progressInterval);
+      setProgress(100);
+      setCurrentStatus('Completing...');
   
       if (!response.ok) {
-        throw new Error('Failed to scrape jobs. Please try again.');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to scrape jobs. Please try again.');
       }
   
       const data = await response.json();
-  
-      setJobsFound(data.jobsFound || 0);
+      
+      setJobsFound(data.savedJobs || 0);
       setScrapingComplete(true);
-      toast.success('Scraping completed successfully!');
+      setCurrentStatus(`Found ${data.savedJobs || 0} jobs with email contacts`);
+      toast.success(`Successfully scraped ${data.savedJobs || 0} jobs with email contacts!`);
     } catch (error) {
       console.error(error);
+      setCurrentStatus('');
       toast.error(error.message || 'An error occurred while scraping jobs.');
     } finally {
       setIsLoading(false);
@@ -94,6 +124,7 @@ const Scrape = () => {
     setProgress(0);
     setScrapingComplete(false);
     setJobsFound(0);
+    setCurrentStatus('');
   };
 
   return (
@@ -143,11 +174,42 @@ const Scrape = () => {
                   Scraping Configuration
                 </CardTitle>
                 <CardDescription>
-                  Configure your job search parameters to find the most relevant opportunities
+                  Configure your job search parameters to find the most relevant apprenticeship opportunities
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="website" className="text-sm font-medium">
+                      Source Website *
+                    </Label>
+                    <div className="relative">
+                      <Globe className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Select value={website} onValueChange={setWebsite} disabled={isLoading}>
+                        <SelectTrigger className="pl-10">
+                          <SelectValue placeholder="Select a website to scrape from" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="ausbildung">
+                            <div className="flex items-center gap-2">
+                              <Target className="w-4 h-4" />
+                              <span>ausbildung.de</span>
+                              <Badge variant="secondary" className="text-xs">Recommended</Badge>
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="azubi">
+                            <div className="flex items-center gap-2">
+                              <Target className="w-4 h-4" />
+                              <span>azubi.de</span>
+                            </div>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Choose the job portal to search for apprenticeships
+                    </p>
+                  </div>
                   <div className="space-y-2">
                     <Label htmlFor="searchTerm" className="text-sm font-medium">
                       Search Term *
@@ -171,14 +233,14 @@ const Scrape = () => {
 
                   <div className="space-y-2">
                     <Label htmlFor="location" className="text-sm font-medium">
-                      Location *
+                      Location
                     </Label>
                     <div className="relative">
                       <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                       <Input
                         id="location"
                         type="text"
-                        placeholder="e.g., München, Berlin, Hamburg"
+                        placeholder="e.g., München, Berlin, Hamburg (optional)"
                         value={location}
                         onChange={(e) => setLocation(e.target.value)}
                         className="pl-10"
@@ -186,7 +248,7 @@ const Scrape = () => {
                       />
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      City or region where you want to find jobs
+                      City or region where you want to find jobs. Leave empty for nationwide search.
                     </p>
                   </div>
 
@@ -220,11 +282,11 @@ const Scrape = () => {
                     >
                       <div className="flex items-center gap-2 text-sm font-medium">
                         <LoadingSpinner size="sm" />
-                        Scraping in progress...
+                        Scraping from {websiteConfig[website].name}
                       </div>
                       <Progress value={progress} className="w-full" />
                       <p className="text-xs text-muted-foreground">
-                        Searching {searchTerm} positions in {location}... ({Math.round(progress)}% complete)
+                        {currentStatus || `Searching ${searchTerm} positions${location ? ` in ${location}` : ' nationwide'}...`}
                       </p>
                     </motion.div>
                   )}
@@ -237,10 +299,11 @@ const Scrape = () => {
                     >
                       <div className="flex items-center gap-2 text-green-800 dark:text-green-300 font-medium mb-2">
                         <CheckCircle className="w-5 h-5" />
-                        Scraping Completed!
+                        Scraping Completed Successfully!
                       </div>
                       <p className="text-sm text-green-700 dark:text-green-400 mb-3">
-                        Found {jobsFound} job opportunities for "{searchTerm}" in {location}
+                        Found <span className="font-semibold">{jobsFound}</span> apprenticeships with email contacts for "{searchTerm}"
+                        {location && ` in ${location}`} from {websiteConfig[website].name}
                       </p>
                       <div className="flex gap-2">
                         <Button asChild size="sm">
@@ -279,17 +342,32 @@ const Scrape = () => {
                   </Button>
                 </form>
 
-                <div className="mt-6 p-4 bg-muted/30 rounded-lg">
-                  <div className="flex items-start gap-3">
-                    <Zap className="w-5 h-5 text-primary mt-0.5" />
-                    <div className="text-sm">
-                      <h4 className="font-medium mb-1">Pro Tip</h4>
-                      <p className="text-muted-foreground">
-                        Use specific job titles for better results. The scraper will find positions 
-                        from major job boards and company websites automatically.
-                      </p>
+                <div className="mt-6 space-y-4">
+                  <div className="p-4 bg-muted/30 rounded-lg border">
+                    <div className="flex items-start gap-3">
+                      <Zap className="w-5 h-5 text-primary mt-0.5" />
+                      <div className="text-sm">
+                        <h4 className="font-medium mb-1">Pro Tips</h4>
+                        <ul className="text-muted-foreground space-y-1 text-xs">
+                          <li>• Use specific German job titles (e.g., "Pflegefachmann", "Kaufmann für Büromanagement")</li>
+                          <li>• Leave location empty to search all of Germany</li>
+                          <li>• Start with 1-3 pages to test your search terms</li>
+                          <li>• Only jobs with email contacts will be saved</li>
+                          <li>• {websiteConfig[website].name} is currently selected</li>
+                        </ul>
+                      </div>
                     </div>
                   </div>
+                  
+                  {!isLoading && (
+                    <div className={`p-3 rounded-lg border text-xs ${websiteConfig[website].color}`}>
+                      <div className="flex items-center gap-2 font-medium mb-1">
+                        <Globe className="w-3 h-3" />
+                        Scraping from {websiteConfig[website].name}
+                      </div>
+                      <p>{websiteConfig[website].description}</p>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
